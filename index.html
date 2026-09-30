@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixel Art Studio</title>
+  <style>
+    :root {
+      --bg-dark: #0d0f18;
+      --bg-panel: #151824;
+      --bg-surface: #1e2235;
+      --bg-surface-hover: #272d45;
+      --bg-surface-active: #313854;
+      --border-color: #2b324d;
+      --border-focus: #6366f1;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --canvas-bg-1: #25293d;
+      --canvas-bg-2: #1b1e2e;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* === Header Control Bar === */
+    .app-header {
+      height: 56px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      z-index: 10;
+      flex-shrink: 0;
+      gap: 0.75rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .brand-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: #ffffff;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-phase {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--bg-surface);
+      padding: 2px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .header-btn {
+      background: transparent;
+      color: var(--text-main);
+      border: none;
+      border-radius: 5px;
+      padding: 5px 9px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .header-btn:hover:not(:disabled) {
+      background: var(--bg-surface-hover);
+    }
+
+    .header-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .header-btn.toggle-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+    }
+
+    .header-btn.toggle-btn.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--accent);
+      color: #a5b4fc;
+    }
+
+    .header-btn.danger-btn:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+
+    .control-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .custom-select {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.8rem;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .custom-select:hover {
+      border-color: var(--border-focus);
+    }
+
+    /* === Main Workspace Layout === */
+    .app-workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Toolbar */
+    .left-toolbar {
+      width: 76px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+
+    .tool-btn {
+      width: 48px;
+      height: 48px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tool-btn:hover {
+      background: var(--bg-surface-hover);
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    .tool-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .tool-icon {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    .tool-title {
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+
+    .divider {
+      width: 40px;
+      height: 1px;
+      background: var(--border-color);
+      margin: 0.35rem 0;
+    }
+
+    .color-preview-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .color-preview-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .color-preview-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      background-color: #000000;
+      transition: background-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .color-hex-tag {
+      font-size: 0.65rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--text-muted);
+    }
+
+    /* Central Canvas Viewport */
+    .canvas-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #171a29 0%, #0d0f18 100%);
+      position: relative;
+      overflow: hidden;
+      padding: 1rem;
+    }
+
+    .canvas-container {
+      position: relative;
+      border-radius: 4px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      background-color: var(--canvas-bg-1);
+      background-image:
+        linear-gradient(45deg, var(--canvas-bg-2) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--canvas-bg-2) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--canvas-bg-2) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--canvas-bg-2) 75%);
+      background-size: 24px 24px;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #canvas {
+      display: block;
+      width: 512px;
+      height: 512px;
+      image-rendering: pixelated;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* Right Sidebar (Palette + Layers Panel) */
+    .right-sidebar {
+      width: 250px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .sidebar-section:not(:last-child) {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-header {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-subtext {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: normal;
+    }
+
+    /* Palette Grid */
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .palette-swatch {
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background-color: var(--swatch-color);
+      position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      outline: none;
+    }
+
+    .palette-swatch:hover {
+      transform: scale(1.12);
+      z-index: 2;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .palette-swatch.selected {
+      border-color: #ffffff;
+      box-shadow: 0 0 0 2px var(--accent), 0 4px 12px rgba(0, 0, 0, 0.5);
+      transform: scale(1.08);
+      z-index: 1;
+    }
+
+    .custom-color-btn {
+      width: 100%;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .custom-color-btn:hover {
+      background: var(--bg-surface-hover);
+      border-color: var(--border-focus);
+    }
+
+    /* Layers List */
+    .layers-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .layer-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .layer-row:hover {
+      background: var(--bg-surface-hover);
+    }
+
+    .layer-row.active {
+      border-color: var(--accent);
+      background: var(--bg-surface-active);
+      box-shadow: inset 2px 0 0 var(--accent);
+    }
+
+    .layer-vis-toggle {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: color 0.15s ease;
+      font-size: 0.95rem;
+    }
+
+    .layer-vis-toggle:hover {
+      color: var(--text-main);
+    }
+
+    .layer-vis-toggle.hidden {
+      color: #64748b;
+      opacity: 0.5;
+    }
+
+    .layer-radio {
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .layer-label {
+      flex: 1;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .layer-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: normal;
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(30, 34, 53, 0.95);
+      border: 1px solid var(--accent);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+    }
+
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* === Bottom Status Bar === */
+    .status-bar {
+      height: 28px;
+      background: #11131c;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      gap: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .indicator-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Controls -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zm8 0h2v6h-2V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6zm8 0h2v6h-2v-6zM3 19h6v2H3v-2zm8 0h6v2h-6v-2zm8 0h2v2h-2v-2z"/></svg>
+      </div>
+      <h1 class="brand-title">Pixel Art Studio</h1>
+      <span class="badge-phase">階段 3 完整版</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Undo / Redo Group -->
+      <div class="btn-group">
+        <button id="undo-btn" class="header-btn" title="復原上一筆畫 (Ctrl+Z)" disabled>
+          <span>↶</span>
+          <span>復原</span>
+        </button>
+        <button id="redo-btn" class="header-btn" title="重做下一筆畫 (Ctrl+Y)" disabled>
+          <span>↷</span>
+          <span>重做</span>
+        </button>
+      </div>
+
+      <!-- JSON Project Group -->
+      <div class="btn-group">
+        <button id="btn-export-json" class="header-btn" title="匯出專案 (JSON 格式下載)">
+          <span>💾</span>
+          <span>匯出 JSON</span>
+        </button>
+        <button id="btn-import-json" class="header-btn" title="匯入本機 JSON 專案檔">
+          <span>📂</span>
+          <span>匯入 JSON</span>
+        </button>
+        <input type="file" id="file-import-json" accept=".json" style="display: none;">
+      </div>
+
+      <!-- PNG Export Group -->
+      <div class="btn-group">
+        <button id="btn-export-png-1x" class="header-btn" title="匯出原始解析度 PNG (1x)">
+          <span>🖼️</span>
+          <span>PNG 1x</span>
+        </button>
+        <button id="btn-export-png-16x" class="header-btn" title="匯出 16 倍清晰無失真 PNG (16x)">
+          <span>🔍</span>
+          <span>PNG 16x</span>
+        </button>
+      </div>
+
+      <!-- Clear Canvas -->
+      <button id="btn-clear-canvas" class="header-btn danger-btn" title="重置清空畫布所有圖層">
+        <span>🗑️</span>
+        <span>清空</span>
+      </button>
+
+      <!-- Canvas Size Selector -->
+      <div class="control-item">
+        <label for="grid-size-select">尺寸：</label>
+        <select id="grid-size-select" class="custom-select">
+          <option value="16" selected>16 x 16</option>
+          <option value="32">32 x 32</option>
+        </select>
+      </div>
+
+      <!-- Grid Toggle -->
+      <button id="grid-toggle" class="header-btn toggle-btn active" title="點擊切換輔助格線顯示">
+        <span>⊞</span>
+        <span id="grid-toggle-text">格線</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="app-workspace">
+    <!-- Left Toolbar -->
+    <aside class="left-toolbar" aria-label="工具面板">
+      <button id="pencil-tool" class="tool-btn active" title="鉛筆工具 (1x1 像素)">
+        <span class="tool-icon">✏️</span>
+        <span class="tool-title">鉛筆</span>
+      </button>
+
+      <button id="eraser-tool" class="tool-btn" title="橡皮擦工具 (1x1 像素)">
+        <span class="tool-icon">🧹</span>
+        <span class="tool-title">橡皮擦</span>
+      </button>
+
+      <button id="bucket-tool" class="tool-btn" title="油漆桶填色 (BFS Flood Fill)">
+        <span class="tool-icon">🪣</span>
+        <span class="tool-title">油漆桶</span>
+      </button>
+
+      <button id="eyedropper-tool" class="tool-btn" title="滴管吸色 (由上至下取色)">
+        <span class="tool-icon">🧪</span>
+        <span class="tool-title">吸管</span>
+      </button>
+
+      <div class="divider"></div>
+
+      <!-- Current Color Preview -->
+      <div class="color-preview-wrapper" title="當前選取之繪製顏色 (點擊開啟自訂選色器)">
+        <span class="color-preview-label">顏色</span>
+        <div id="color-preview" class="color-preview-box"></div>
+        <span id="color-hex" class="color-hex-tag">#000000</span>
+      </div>
+
+      <!-- Hidden Native Color Picker -->
+      <input type="color" id="native-color-picker" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+    </aside>
+
+    <!-- Center Canvas Area -->
+    <main class="canvas-viewport" id="canvas-viewport">
+      <div class="canvas-container">
+        <!-- Render Canvas 512x512 -->
+        <canvas id="canvas" width="512" height="512"></canvas>
+      </div>
+    </main>
+
+    <!-- Right Sidebar (Palette + Layers Panel) -->
+    <aside class="right-sidebar">
+      <!-- Section 1: Palette -->
+      <section class="sidebar-section" aria-label="調色盤面板">
+        <div class="section-header">
+          <span>調色盤</span>
+          <span class="section-subtext">Pico-8 16 色</span>
+        </div>
+        <div id="palette" class="palette-grid">
+          <button class="palette-swatch selected" data-color="#000000" style="--swatch-color: #000000;" title="Black (#000000)"></button>
+          <button class="palette-swatch" data-color="#1D2B53" style="--swatch-color: #1D2B53;" title="Dark Blue (#1D2B53)"></button>
+          <button class="palette-swatch" data-color="#7E2553" style="--swatch-color: #7E2553;" title="Dark Purple (#7E2553)"></button>
+          <button class="palette-swatch" data-color="#008751" style="--swatch-color: #008751;" title="Dark Green (#008751)"></button>
+          <button class="palette-swatch" data-color="#AB5236" style="--swatch-color: #AB5236;" title="Brown (#AB5236)"></button>
+          <button class="palette-swatch" data-color="#5F574F" style="--swatch-color: #5F574F;" title="Dark Gray (#5F574F)"></button>
+          <button class="palette-swatch" data-color="#C2C3C7" style="--swatch-color: #C2C3C7;" title="Light Gray (#C2C3C7)"></button>
+          <button class="palette-swatch" data-color="#FFF1E8" style="--swatch-color: #FFF1E8;" title="White (#FFF1E8)"></button>
+          <button class="palette-swatch" data-color="#FF004D" style="--swatch-color: #FF004D;" title="Red (#FF004D)"></button>
+          <button class="palette-swatch" data-color="#FFA300" style="--swatch-color: #FFA300;" title="Orange (#FFA300)"></button>
+          <button class="palette-swatch" data-color="#FFEC27" style="--swatch-color: #FFEC27;" title="Yellow (#FFEC27)"></button>
+          <button class="palette-swatch" data-color="#00E436" style="--swatch-color: #00E436;" title="Green (#00E436)"></button>
+          <button class="palette-swatch" data-color="#29ADFF" style="--swatch-color: #29ADFF;" title="Blue (#29ADFF)"></button>
+          <button class="palette-swatch" data-color="#83769C" style="--swatch-color: #83769C;" title="Indigo (#83769C)"></button>
+          <button class="palette-swatch" data-color="#FF77A8" style="--swatch-color: #FF77A8;" title="Pink (#FF77A8)"></button>
+          <button class="palette-swatch" data-color="#FFCCAA" style="--swatch-color: #FFCCAA;" title="Peach (#FFCCAA)"></button>
+        </div>
+
+        <button id="btn-custom-color" class="custom-color-btn" title="自訂當前選中色塊之 HEX 顏色">
+          <span>🎨</span>
+          <span>自訂選色器</span>
+        </button>
+      </section>
+
+      <!-- Section 2: Layers Panel -->
+      <section class="sidebar-section" id="layers-panel" aria-label="圖層面板">
+        <div class="section-header">
+          <span>圖層面板</span>
+          <span class="section-subtext">3 圖層結構</span>
+        </div>
+
+        <div class="layers-list">
+          <!-- Foreground Layer -->
+          <div class="layer-row active" data-layer="foreground">
+            <span class="layer-vis-toggle" title="切換前景層顯示/隱藏">
+              <input type="checkbox" id="layer-vis-foreground" checked style="cursor: pointer;">
+            </span>
+            <input type="radio" name="active-layer" id="layer-radio-foreground" value="foreground" class="layer-radio" checked>
+            <div class="layer-label">
+              前景層 <span class="layer-sub">(Foreground)</span>
+            </div>
+          </div>
+
+          <!-- Midground Layer -->
+          <div class="layer-row" data-layer="midground">
+            <span class="layer-vis-toggle" title="切換中間層顯示/隱藏">
+              <input type="checkbox" id="layer-vis-midground" checked style="cursor: pointer;">
+            </span>
+            <input type="radio" name="active-layer" id="layer-radio-midground" value="midground" class="layer-radio">
+            <div class="layer-label">
+              中間層 <span class="layer-sub">(Midground)</span>
+            </div>
+          </div>
+
+          <!-- Background Layer -->
+          <div class="layer-row" data-layer="background">
+            <span class="layer-vis-toggle" title="切換背景層顯示/隱藏">
+              <input type="checkbox" id="layer-vis-background" checked style="cursor: pointer;">
+            </span>
+            <input type="radio" name="active-layer" id="layer-radio-background" value="background" class="layer-radio">
+            <div class="layer-label">
+              背景層 <span class="layer-sub">(Background)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Toast Notification Message -->
+  <div id="toast" class="toast-msg">已儲存</div>
+
+  <!-- Bottom Status Bar -->
+  <footer class="status-bar">
+    <div class="status-pill">
+      <span class="indicator-dot"></span>
+      <span id="status-tool">工具：鉛筆 (1x1)</span>
+    </div>
+    <div class="status-pill">
+      <span id="status-pos">座標：-- , --</span>
+    </div>
+    <div class="status-pill">
+      <span id="status-size">解析度：16 x 16</span>
+    </div>
+    <div class="status-pill">
+      <span id="status-layer">當前圖層：前景 (Foreground)</span>
+    </div>
+    <div class="status-pill" style="margin-left: auto;">
+      <span id="status-save">自動存檔：已啟用</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'pixel_art_mvp_save';
+      const MAX_HISTORY = 15;
+
+      // Application State
+      const app = {
+        version: '1.0',
+        width: 16,
+        height: 16,
+        currentColor: '#000000',
+        currentTool: 'pencil', // 'pencil' | 'eraser' | 'bucket' | 'eyedropper'
+        showGrid: true,
+        currentLayer: 'foreground', // 'foreground' | 'midground' | 'background'
+        layers: {
+          foreground: { visible: true, data: [] },
+          midground: { visible: true, data: [] },
+          background: { visible: true, data: [] }
+        },
+        isDrawing: false,
+        lastGridPos: null
+      };
+
+      let undoStack = [];
+      let redoStack = [];
+
+      // Helper to initialize layer data matrix: 2D array [height][width] filled with null (transparent)
+      function createMatrix(w, h) {
+        const matrix = [];
+        for (let y = 0; y < h; y++) {
+          matrix.push(new Array(w).fill(null));
+        }
+        return matrix;
+      }
+
+      function initLayers(w, h) {
+        app.layers.foreground.data = createMatrix(w, h);
+        app.layers.midground.data = createMatrix(w, h);
+        app.layers.background.data = createMatrix(w, h);
+      }
+
+      // Snapshot layers
+      function snapshotLayers() {
+        const copy = {};
+        for (const key of ['foreground', 'midground', 'background']) {
+          copy[key] = {
+            visible: app.layers[key].visible,
+            data: app.layers[key].data.map(row => [...row])
+          };
+        }
+        return copy;
+      }
+
+      function restoreLayers(snapshot) {
+        for (const key of ['foreground', 'midground', 'background']) {
+          app.layers[key].visible = snapshot[key].visible;
+          app.layers[key].data = snapshot[key].data.map(row => [...row]);
+        }
+        ['foreground', 'midground', 'background'].forEach(key => {
+          const chk = document.getElementById(`layer-vis-${key}`);
+          if (chk) chk.checked = app.layers[key].visible;
+          const row = document.querySelector(`.layer-row[data-layer="${key}"]`);
+          if (row && typeof row.querySelector === 'function') {
+            const visToggle = row.querySelector('.layer-vis-toggle');
+            if (visToggle) visToggle.classList.toggle('hidden', !app.layers[key].visible);
+          }
+        });
+      }
+
+      function saveState() {
+        undoStack.push(snapshotLayers());
+        if (undoStack.length > MAX_HISTORY) {
+          undoStack.shift();
+        }
+        redoStack = [];
+        updateUndoRedoUI();
+      }
+
+      function undo() {
+        if (undoStack.length === 0) return;
+        redoStack.push(snapshotLayers());
+        const previous = undoStack.pop();
+        restoreLayers(previous);
+        updateUndoRedoUI();
+        render();
+        autoSave();
+      }
+
+      function redo() {
+        if (redoStack.length === 0) return;
+        undoStack.push(snapshotLayers());
+        const next = redoStack.pop();
+        restoreLayers(next);
+        updateUndoRedoUI();
+        render();
+        autoSave();
+      }
+
+      // DOM Elements
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const palette = document.getElementById('palette');
+      const pencilToolBtn = document.getElementById('pencil-tool');
+      const eraserToolBtn = document.getElementById('eraser-tool');
+      const bucketToolBtn = document.getElementById('bucket-tool');
+      const eyedropperToolBtn = document.getElementById('eyedropper-tool');
+      const undoBtn = document.getElementById('undo-btn');
+      const redoBtn = document.getElementById('redo-btn');
+      const colorPreview = document.getElementById('color-preview');
+      const colorHex = document.getElementById('color-hex');
+      const nativeColorPicker = document.getElementById('native-color-picker');
+      const btnCustomColor = document.getElementById('btn-custom-color');
+      const gridToggleBtn = document.getElementById('grid-toggle');
+      const gridSizeSelect = document.getElementById('grid-size-select');
+      const btnExportJSON = document.getElementById('btn-export-json');
+      const btnImportJSON = document.getElementById('btn-import-json');
+      const fileImportJSON = document.getElementById('file-import-json');
+      const btnExportPNG1x = document.getElementById('btn-export-png-1x');
+      const btnExportPNG16x = document.getElementById('btn-export-png-16x');
+      const btnClearCanvas = document.getElementById('btn-clear-canvas');
+      const statusTool = document.getElementById('status-tool');
+      const statusPos = document.getElementById('status-pos');
+      const statusSize = document.getElementById('status-size');
+      const statusLayer = document.getElementById('status-layer');
+      const toast = document.getElementById('toast');
+
+      function showToast(text) {
+        if (!toast) return;
+        toast.textContent = text;
+        toast.classList.add('show');
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 1800);
+      }
+
+      function updateUndoRedoUI() {
+        undoBtn.disabled = (undoStack.length === 0);
+        redoBtn.disabled = (redoStack.length === 0);
+      }
+
+      function getPaletteColors() {
+        const swatches = document.querySelectorAll('.palette-swatch');
+        const colors = [];
+        swatches.forEach(s => colors.push(s.dataset.color));
+        return colors;
+      }
+
+      function setPaletteColors(colors) {
+        if (!colors || !Array.isArray(colors)) return;
+        const swatches = document.querySelectorAll('.palette-swatch');
+        swatches.forEach((s, idx) => {
+          if (colors[idx]) {
+            s.dataset.color = colors[idx];
+            s.style.setProperty('--swatch-color', colors[idx]);
+            s.title = colors[idx].toUpperCase();
+          }
+        });
+      }
+
+      // === Phase 3: Auto-Save / Persistence ===
+      function serializeProject() {
+        return {
+          version: '1.0',
+          width: app.width,
+          height: app.height,
+          palette: getPaletteColors(),
+          layers: {
+            foreground: {
+              visible: app.layers.foreground.visible,
+              data: app.layers.foreground.data
+            },
+            midground: {
+              visible: app.layers.midground.visible,
+              data: app.layers.midground.data
+            },
+            background: {
+              visible: app.layers.background.visible,
+              data: app.layers.background.data
+            }
+          }
+        };
+      }
+
+      function autoSave() {
+        try {
+          const data = serializeProject();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (_) {}
+      }
+
+      function applyProjectData(data) {
+        if (!data || !data.layers) return false;
+
+        app.width = data.width || 16;
+        app.height = data.height || 16;
+        gridSizeSelect.value = app.width.toString();
+        statusSize.textContent = `解析度：${app.width} x ${app.height}`;
+
+        if (data.palette) {
+          setPaletteColors(data.palette);
+        }
+
+        ['foreground', 'midground', 'background'].forEach(key => {
+          if (data.layers[key]) {
+            app.layers[key].visible = (data.layers[key].visible !== false);
+            app.layers[key].data = data.layers[key].data.map(row => [...row]);
+            const chk = document.getElementById(`layer-vis-${key}`);
+            if (chk) chk.checked = app.layers[key].visible;
+            const row = document.querySelector(`.layer-row[data-layer="${key}"]`);
+            if (row && typeof row.querySelector === 'function') {
+              const visToggle = row.querySelector('.layer-vis-toggle');
+              if (visToggle) visToggle.classList.toggle('hidden', !app.layers[key].visible);
+            }
+          }
+        });
+
+        undoStack = [];
+        redoStack = [];
+        updateUndoRedoUI();
+        render();
+        return true;
+      }
+
+      function loadSavedData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return false;
+          const data = JSON.parse(raw);
+          if (data && data.version && data.width && data.height && data.layers) {
+            return applyProjectData(data);
+          }
+        } catch (_) {}
+        return false;
+      }
+
+      // === Phase 3: JSON Import & Export ===
+      function exportJSON() {
+        const data = serializeProject();
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pixel-art-project-${app.width}x${app.height}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('專案 JSON 匯出成功');
+        return blob;
+      }
+
+      function importJSON(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (applyProjectData(data)) {
+              autoSave();
+              showToast('專案 JSON 匯入成功');
+            } else {
+              alert('JSON 專案格式不符！');
+            }
+          } catch (err) {
+            alert('無法解析所選 JSON 檔案！');
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      // === Phase 3: PNG Export (1x and 16x) ===
+      function generateOffscreenCanvas(scale) {
+        scale = scale || 1;
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = app.width * scale;
+        offCanvas.height = app.height * scale;
+        const offCtx = offCanvas.getContext('2d');
+        offCtx.imageSmoothingEnabled = false;
+
+        // Render layers in stacking order: Background -> Midground -> Foreground
+        const layerOrder = ['background', 'midground', 'foreground'];
+        for (const layerKey of layerOrder) {
+          const layer = app.layers[layerKey];
+          if (!layer || !layer.visible) continue;
+
+          for (let y = 0; y < app.height; y++) {
+            for (let x = 0; x < app.width; x++) {
+              const pixel = layer.data[y][x];
+              if (pixel) {
+                offCtx.fillStyle = pixel;
+                offCtx.fillRect(x * scale, y * scale, scale, scale);
+              }
+            }
+          }
+        }
+
+        return { offCanvas, offCtx };
+      }
+
+      function exportPNG(scale) {
+        scale = scale || 1;
+        const { offCanvas, offCtx } = generateOffscreenCanvas(scale);
+        if (offCanvas.toBlob) {
+          offCanvas.toBlob((blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pixel-art-${scale}x.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`PNG (${scale}x) 匯出成功`);
+          }, 'image/png');
+        }
+        return { offCanvas, offCtx };
+      }
+
+      // Clear Canvas logic
+      function clearCanvas() {
+        const confirmed = window.confirm('確定要清空畫布與所有圖層嗎？此動作將重置當前作品。');
+        if (!confirmed) return;
+        saveState();
+        initLayers(app.width, app.height);
+        render();
+        autoSave();
+        showToast('畫布已清空');
+      }
+
+      // Bresenham's Line Algorithm
+      function bresenham(x0, y0, x1, y1, callback) {
+        let dx = Math.abs(x1 - x0);
+        let dy = Math.abs(y1 - y0);
+        let sx = (x0 < x1) ? 1 : -1;
+        let sy = (y0 < y1) ? 1 : -1;
+        let err = dx - dy;
+
+        while (true) {
+          callback(x0, y0);
+          if (x0 === x1 && y0 === y1) break;
+          let e2 = 2 * err;
+          if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+          }
+          if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+          }
+        }
+      }
+
+      function setPixel(x, y, color) {
+        if (x < 0 || x >= app.width || y < 0 || y >= app.height) return;
+        const matrix = app.layers[app.currentLayer].data;
+        matrix[y][x] = color;
+      }
+
+      // BFS 4-directional Flood Fill
+      function floodFill(startX, startY, fillColor) {
+        const matrix = app.layers[app.currentLayer].data;
+        const targetColor = matrix[startY][startX];
+
+        if (targetColor === fillColor) return;
+
+        saveState();
+
+        const queue = [[startX, startY]];
+        matrix[startY][startX] = fillColor;
+
+        const dirs = [
+          [1, 0], [-1, 0], [0, 1], [0, -1]
+        ];
+
+        while (queue.length > 0) {
+          const [cx, cy] = queue.pop();
+
+          for (const [dx, dy] of dirs) {
+            const nx = cx + dx;
+            const ny = cy + dy;
+
+            if (nx >= 0 && nx < app.width && ny >= 0 && ny < app.height) {
+              if (matrix[ny][nx] === targetColor) {
+                matrix[ny][nx] = fillColor;
+                queue.push([nx, ny]);
+              }
+            }
+          }
+        }
+
+        render();
+        autoSave();
+      }
+
+      // Eyedropper
+      function pickColor(x, y) {
+        const layerOrder = ['foreground', 'midground', 'background'];
+        let pickedColor = null;
+
+        for (const layerKey of layerOrder) {
+          const layer = app.layers[layerKey];
+          if (layer.visible && layer.data[y][x] !== null) {
+            pickedColor = layer.data[y][x];
+            break;
+          }
+        }
+
+        if (pickedColor) {
+          selectColor(pickedColor);
+        }
+      }
+
+      function selectColor(color) {
+        app.currentColor = color;
+        colorPreview.style.backgroundColor = color;
+        colorHex.textContent = color.toUpperCase();
+        if (nativeColorPicker) {
+          nativeColorPicker.value = (color.startsWith('#') && color.length === 7) ? color : '#000000';
+        }
+
+        let matched = false;
+        const swatches = document.querySelectorAll('.palette-swatch');
+        swatches.forEach(swatch => {
+          if (swatch.dataset.color.toLowerCase() === color.toLowerCase()) {
+            swatch.classList.add('selected');
+            matched = true;
+          } else {
+            swatch.classList.remove('selected');
+          }
+        });
+
+        if (!matched) {
+          const activeSwatch = document.querySelector('.palette-swatch.selected') || swatches[0];
+          if (activeSwatch) {
+            activeSwatch.classList.add('selected');
+            activeSwatch.dataset.color = color;
+            activeSwatch.style.setProperty('--swatch-color', color);
+            activeSwatch.title = color.toUpperCase();
+          }
+        }
+        autoSave();
+      }
+
+      // Canvas Rendering
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cellW = canvas.width / app.width;
+        const cellH = canvas.height / app.height;
+
+        // Render layers in stacking order: Background -> Midground -> Foreground
+        const layerOrder = ['background', 'midground', 'foreground'];
+        for (const layerKey of layerOrder) {
+          const layer = app.layers[layerKey];
+          if (!layer || !layer.visible) continue;
+
+          for (let y = 0; y < app.height; y++) {
+            for (let x = 0; x < app.width; x++) {
+              const pixel = layer.data[y][x];
+              if (pixel) {
+                ctx.fillStyle = pixel;
+                ctx.fillRect(
+                  Math.floor(x * cellW),
+                  Math.floor(y * cellH),
+                  Math.ceil(cellW),
+                  Math.ceil(cellH)
+                );
+              }
+            }
+          }
+        }
+
+        // Auxiliary Grid Lines
+        if (app.showGrid) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 1;
+
+          for (let x = 0; x <= app.width; x++) {
+            const px = Math.round(x * cellW) - 0.5;
+            ctx.beginPath();
+            ctx.moveTo(px, 0);
+            ctx.lineTo(px, canvas.height);
+            ctx.stroke();
+          }
+
+          for (let y = 0; y <= app.height; y++) {
+            const py = Math.round(y * cellH) - 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, py);
+            ctx.lineTo(canvas.width, py);
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        }
+      }
+
+      function getGridCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = (e.clientX !== undefined) ? e.clientX : rect.left;
+        const clientY = (e.clientY !== undefined) ? e.clientY : rect.top;
+
+        const relX = clientX - rect.left;
+        const relY = clientY - rect.top;
+
+        const cellW = rect.width / app.width;
+        const cellH = rect.height / app.height;
+
+        let gx = Math.floor(relX / cellW);
+        let gy = Math.floor(relY / cellH);
+
+        gx = Math.max(0, Math.min(app.width - 1, gx));
+        gy = Math.max(0, Math.min(app.height - 1, gy));
+
+        return { x: gx, y: gy };
+      }
+
+      function paintAt(x, y) {
+        const drawColor = (app.currentTool === 'eraser') ? null : app.currentColor;
+
+        if (!app.lastGridPos) {
+          setPixel(x, y, drawColor);
+        } else {
+          bresenham(app.lastGridPos.x, app.lastGridPos.y, x, y, (px, py) => {
+            setPixel(px, py, drawColor);
+          });
+        }
+        app.lastGridPos = { x, y };
+        render();
+      }
+
+      // Pointer event listeners on Canvas
+      canvas.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 && e.buttons !== 1) return;
+
+        const { x, y } = getGridCoordinates(e);
+
+        if (app.currentTool === 'bucket') {
+          floodFill(x, y, app.currentColor);
+          return;
+        }
+
+        if (app.currentTool === 'eyedropper') {
+          pickColor(x, y);
+          return;
+        }
+
+        saveState();
+        app.isDrawing = true;
+        if (canvas.setPointerCapture) {
+          try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+        }
+
+        app.lastGridPos = null;
+        paintAt(x, y);
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        const { x, y } = getGridCoordinates(e);
+        statusPos.textContent = `座標：${x} , ${y}`;
+
+        if (app.isDrawing && (app.currentTool === 'pencil' || app.currentTool === 'eraser')) {
+          paintAt(x, y);
+        }
+      });
+
+      function stopDrawing(e) {
+        if (app.isDrawing) {
+          app.isDrawing = false;
+          app.lastGridPos = null;
+          if (e && e.pointerId && canvas.releasePointerCapture) {
+            try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+          }
+          autoSave();
+        }
+      }
+
+      canvas.addEventListener('pointerup', stopDrawing);
+      canvas.addEventListener('pointercancel', stopDrawing);
+      window.addEventListener('pointerup', stopDrawing);
+
+      canvas.addEventListener('click', (e) => {
+        const { x, y } = getGridCoordinates(e);
+        if (app.currentTool === 'bucket') {
+          floodFill(x, y, app.currentColor);
+        } else if (app.currentTool === 'eyedropper') {
+          pickColor(x, y);
+        } else if (app.currentTool === 'eraser') {
+          saveState();
+          setPixel(x, y, null);
+          render();
+          autoSave();
+        } else {
+          saveState();
+          setPixel(x, y, app.currentColor);
+          render();
+          autoSave();
+        }
+      });
+
+      canvas.addEventListener('pointerleave', () => {
+        statusPos.textContent = `座標：-- , --`;
+      });
+
+      // Tool Switcher logic
+      const tools = {
+        'pencil': { btn: pencilToolBtn, name: '鉛筆 (1x1)' },
+        'eraser': { btn: eraserToolBtn, name: '橡皮擦 (1x1)' },
+        'bucket': { btn: bucketToolBtn, name: '油漆桶' },
+        'eyedropper': { btn: eyedropperToolBtn, name: '吸管' }
+      };
+
+      function setTool(toolName) {
+        app.currentTool = toolName;
+        Object.keys(tools).forEach(k => {
+          tools[k].btn.classList.toggle('active', k === toolName);
+        });
+        statusTool.textContent = `工具：${tools[toolName].name}`;
+        autoSave();
+      }
+
+      pencilToolBtn.addEventListener('click', () => setTool('pencil'));
+      eraserToolBtn.addEventListener('click', () => setTool('eraser'));
+      bucketToolBtn.addEventListener('click', () => setTool('bucket'));
+      eyedropperToolBtn.addEventListener('click', () => setTool('eyedropper'));
+
+      // Palette selection logic
+      palette.addEventListener('click', (e) => {
+        const swatch = e.target.closest('.palette-swatch');
+        if (!swatch) return;
+        const color = swatch.dataset.color;
+        if (!color) return;
+        selectColor(color);
+      });
+
+      palette.addEventListener('dblclick', (e) => {
+        const swatch = e.target.closest('.palette-swatch');
+        if (!swatch) return;
+        if (nativeColorPicker) nativeColorPicker.click();
+      });
+
+      btnCustomColor.addEventListener('click', () => {
+        if (nativeColorPicker) nativeColorPicker.click();
+      });
+      colorPreview.addEventListener('click', () => {
+        if (nativeColorPicker) nativeColorPicker.click();
+      });
+
+      nativeColorPicker.addEventListener('input', (e) => {
+        selectColor(e.target.value);
+      });
+      nativeColorPicker.addEventListener('change', (e) => {
+        selectColor(e.target.value);
+      });
+
+      // Layers Panel interaction
+      const layerRows = document.querySelectorAll('.layer-row');
+      layerRows.forEach(row => {
+        const layerKey = row.dataset.layer;
+        const radio = row.querySelector('.layer-radio');
+        const chk = row.querySelector(`#layer-vis-${layerKey}`);
+
+        row.addEventListener('click', (e) => {
+          if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') return;
+          selectLayer(layerKey);
+        });
+
+        chk.addEventListener('change', (e) => {
+          app.layers[layerKey].visible = e.target.checked;
+          const visToggle = row.querySelector('.layer-vis-toggle');
+          if (visToggle) visToggle.classList.toggle('hidden', !e.target.checked);
+          render();
+          autoSave();
+        });
+      });
+
+      function selectLayer(layerKey) {
+        app.currentLayer = layerKey;
+        layerRows.forEach(r => {
+          const isCurrent = (r.dataset.layer === layerKey);
+          r.classList.toggle('active', isCurrent);
+          const radio = r.querySelector('.layer-radio');
+          if (radio) radio.checked = isCurrent;
+        });
+
+        const layerNames = {
+          foreground: '前景 (Foreground)',
+          midground: '中間 (Midground)',
+          background: '背景 (Background)'
+        };
+        statusLayer.textContent = `當前圖層：${layerNames[layerKey]}`;
+        autoSave();
+      }
+
+      // Undo / Redo listeners
+      undoBtn.addEventListener('click', undo);
+      redoBtn.addEventListener('click', redo);
+
+      window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          if (e.key === 'z' || e.key === 'Z') {
+            if (e.shiftKey) {
+              e.preventDefault();
+              redo();
+            } else {
+              e.preventDefault();
+              undo();
+            }
+          } else if (e.key === 'y' || e.key === 'Y') {
+            e.preventDefault();
+            redo();
+          }
+        }
+      });
+
+      // Grid toggle logic
+      gridToggleBtn.addEventListener('click', () => {
+        app.showGrid = !app.showGrid;
+        gridToggleBtn.classList.toggle('active', app.showGrid);
+        render();
+      });
+
+      // Grid size selection logic
+      gridSizeSelect.addEventListener('change', (e) => {
+        const newSize = parseInt(e.target.value, 10);
+        if (newSize === app.width && newSize === app.height) return;
+
+        const confirmReset = window.confirm('切換畫布尺寸將會重置畫布與所有圖層，確定要繼續嗎？');
+        if (confirmReset) {
+          app.width = newSize;
+          app.height = newSize;
+          initLayers(newSize, newSize);
+          undoStack = [];
+          redoStack = [];
+          updateUndoRedoUI();
+          statusSize.textContent = `解析度：${newSize} x ${newSize}`;
+          render();
+          autoSave();
+        } else {
+          e.target.value = app.width.toString();
+        }
+      });
+
+      // Phase 3 Event Handlers: Import / Export / Clear
+      btnExportJSON.addEventListener('click', exportJSON);
+      btnImportJSON.addEventListener('click', () => fileImportJSON.click());
+      fileImportJSON.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          importJSON(file);
+          fileImportJSON.value = '';
+        }
+      });
+
+      btnExportPNG1x.addEventListener('click', () => exportPNG(1));
+      btnExportPNG16x.addEventListener('click', () => exportPNG(16));
+      btnClearCanvas.addEventListener('click', clearCanvas);
+
+      // Programmatic Interface for Automated Testing & Verification
+      window.pixelApp = {
+        app,
+        setTool,
+        selectColor,
+        selectLayer,
+        floodFill,
+        pickColor,
+        undo,
+        redo,
+        saveState,
+        autoSave,
+        loadSavedData,
+        serializeProject,
+        applyProjectData,
+        exportJSON,
+        importJSON,
+        exportPNG,
+        generateOffscreenCanvas,
+        clearCanvas,
+        render,
+        getPixel: (x, y) => app.layers[app.currentLayer].data[y][x],
+        setPixel: (x, y, color) => setPixel(x, y, color),
+        getCurrentLayerMatrix: () => app.layers[app.currentLayer].data
+      };
+
+      Object.defineProperty(window, 'currentLayerMatrix', {
+        get: function () {
+          return app.layers[app.currentLayer].data;
+        },
+        configurable: true
+      });
+
+      // Initialization: Load saved data if present, otherwise initialize defaults
+      const loaded = loadSavedData();
+      if (!loaded) {
+        initLayers(app.width, app.height);
+        selectColor(app.currentColor);
+        render();
+        autoSave();
+      }
+
+    })();
+  </script>
+</body>
+</html>
